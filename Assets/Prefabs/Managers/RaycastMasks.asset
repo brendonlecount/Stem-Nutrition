@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca71b62c7ff37fd40800373a0d243150, type: 3}
+  m_Name: RaycastMasks
+  m_EditorClassIdentifier: 
+  blocksAudioMask:
+    serializedVersion: 2
+    m_Bits: 0
+  blocksLightMask:
+    serializedVersion: 2
+    m_Bits: 1
+  blocksRadarMask:
+    serializedVersion: 2
+    m_Bits: 0
+  blocksBeamsMask:
+    serializedVersion: 2
+    m_Bits: 16385
+  blocksProjectilesMask:
+    serializedVersion: 2
+    m_Bits: 16401
+  hitsProjectilesMask:
+    serializedVersion: 2
+    m_Bits: 19985
+  hitsBeamsMask:
+    serializedVersion: 2
+    m_Bits: 19969
+  standableMask:
+    serializedVersion: 2
+    m_Bits: 16641
+  crosshairMask:
+    serializedVersion: 2
+    m_Bits: 19985

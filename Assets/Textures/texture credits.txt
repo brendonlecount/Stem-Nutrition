@@ -1,0 +1,3 @@
+https://www.textures.com/download/3dscans0124/132282?q=dirt
+TexturesCom_1.5x1.5_RockyDirt1B_1024_albedo
+TexturesCom_1.5x1.5_RockyDirt1B_1024_normal
