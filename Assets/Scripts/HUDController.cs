@@ -28,6 +28,16 @@ public class HUDController : MonoBehaviour {
 	public Bar bloodLactate;
 	public Bar lowerLactate;
 
+	[SerializeField] Image upperLactateImage = null;
+	[SerializeField] Image bloodLactateImage = null;
+	[SerializeField] Image lowerLactateImage = null;
+	[SerializeField] Image hydrationImage = null;
+	[SerializeField] Image hungerImage = null;
+
+	[SerializeField] Color optimalColor = Color.green;
+	[SerializeField] Color intermediateColor = Color.yellow;
+	[SerializeField] Color criticalColor = Color.red;
+
 	PlayerInput input;
 	Crosshair crosshair;
 
@@ -153,6 +163,29 @@ public class HUDController : MonoBehaviour {
 		upperLactate.barValue = input.controller.physique.GetUpperLactateFraction();
 		bloodLactate.barValue = input.controller.physique.GetBloodLactateFraction();
 		lowerLactate.barValue = input.controller.physique.GetLowerLactateFraction();
+
+		SetImageColor(upperLactateImage, input.controller.physique.GetUpperLactateFraction());
+		SetImageColor(bloodLactateImage, input.controller.physique.GetBloodLactateFraction());
+		SetImageColor(lowerLactateImage, input.controller.physique.GetLowerLactateFraction());
+	}
+
+	void SetImageColor(Image image, float fraction)
+	{
+		if (fraction < 0.5f)
+		{
+			image.color = Color.Lerp(optimalColor, intermediateColor, fraction * 2f);
+		}
+		else
+		{
+			image.color = Color.Lerp(intermediateColor, criticalColor, (fraction - 0.5f) * 2f);
+		}
+	}
+
+	void SetImageOpacity(Image image, float fraction)
+	{
+		Color newColor = image.color;
+		newColor.a = fraction;
+		image.color = newColor;
 	}
 
 	// updates the hunger/thirst/sleep information
@@ -163,5 +196,12 @@ public class HUDController : MonoBehaviour {
 		lowerGlycogen.barValue = input.controller.physique.GetLowerGlycogenFraction();
 		protein.barValue = input.controller.physique.GetProteinFraction();
 		hydration.barValue = input.controller.physique.GetHydrationFraction();
+
+		SetImageOpacity(hydrationImage, input.controller.physique.GetHydrationFraction());
+		float mostHungry = Mathf.Min(new float[]{ input.controller.physique.GetUpperGlycogenFraction(),
+													input.controller.physique.GetLiverGlycogenFraction(),
+													input.controller.physique.GetLowerGlycogenFraction(),
+													input.controller.physique.GetProteinFraction()});
+		SetImageOpacity(hungerImage, mostHungry);
 	}
 }
