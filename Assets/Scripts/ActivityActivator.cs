@@ -4,7 +4,11 @@ using UnityEngine;
 
 public class ActivityActivator : Stem.Activator
 {
-	[SerializeField] string activityName = "";
+	[SerializeField] ActivityOverride activityOverride = null;
+	[SerializeField] float duration = 10f;
+
+	PlayerInput player;
+	Physique physique;
 
 	private void Start()
 	{
@@ -14,7 +18,7 @@ public class ActivityActivator : Stem.Activator
 	public override void Activate(InputSource user)
 	{
 		ActivityTimeMenu.GetInstance().onTimeSelected += OnTimeSelected;
-		ActivityTimeMenu.GetInstance().ShowMenu(activityName);
+		ActivityTimeMenu.GetInstance().ShowMenu(activityOverride.GetActionData().name);
 	}
 
 	public override void StopActivate()
@@ -25,5 +29,25 @@ public class ActivityActivator : Stem.Activator
 	public void OnTimeSelected(float activityTime, bool canceled)
 	{
 		ActivityTimeMenu.GetInstance().onTimeSelected -= OnTimeSelected;
+
+		GameObject go = GameObject.FindGameObjectWithTag("PlayerController");
+		if (go != null)
+		{
+			player = go.GetComponent<PlayerInput>();
+			physique = player.controller.physique;
+
+			physique.SetActivityOverride(activityOverride, activityTime * 3600f, activityTime * 3600f / duration);
+			physique.onActivityOverrideEnded += OnActivityOverrideCompleted;
+			player.FreezeControls(true);
+		}
+	}
+
+	public void OnActivityOverrideCompleted(ActivityOverride activityOverride)
+	{
+		physique.onActivityOverrideEnded -= OnActivityOverrideCompleted;
+		if (activityOverride == this.activityOverride)
+		{
+			player.FreezeControls(false);
+		}
 	}
 }

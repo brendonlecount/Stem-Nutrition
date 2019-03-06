@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,6 +39,10 @@ public class HUDController : MonoBehaviour {
 	[SerializeField] Color intermediateColor = Color.yellow;
 	[SerializeField] Color criticalColor = Color.red;
 
+	[SerializeField] GameObject activityOverrideLabel = null;
+	[SerializeField] Text activityOverrideText = null;
+	[SerializeField] Text activityOverrideTime = null;
+
 	PlayerInput input;
 	Crosshair crosshair;
 
@@ -57,6 +62,7 @@ public class HUDController : MonoBehaviour {
 			{
 				input = go.GetComponent<PlayerInput>();
 				crosshair = go.GetComponent<Crosshair>();
+				input.controller.physique.onPhysiqueUpdated += PhysiqueUpdated;
 			}
 		}
 		else
@@ -66,18 +72,23 @@ public class HUDController : MonoBehaviour {
 			{
 				intervalTimer = updateInterval;
 
-				UpdatePose();
 				UpdateTarget();
 				UpdateActivator();
+				UpdatePose();
 				UpdateSpeed();
-				UpdateStamina();
-				UpdateHTS();
 			}
 			else
 			{
 				intervalTimer -= Time.deltaTime;
 			}
 		}
+	}
+
+	private void PhysiqueUpdated(Physique physique)
+	{
+		UpdateStamina(physique);
+		UpdateHTS(physique);
+		UpdateActivityOverride(physique);
 	}
 
 	// TODO: have one text object and set text from poseName obtained from controller.
@@ -156,7 +167,7 @@ public class HUDController : MonoBehaviour {
 	}
 
 	// updates the stamina (lactic acid) bars
-	void UpdateStamina()
+	void UpdateStamina(Physique physique)
 	{
 		calorieText.text = (input.controller.physique.GetCalorieRate() * 3600f * 24f).ToString("N0");
 
@@ -196,19 +207,34 @@ public class HUDController : MonoBehaviour {
 	}
 
 	// updates the hunger/thirst/sleep information
-	void UpdateHTS()
+	void UpdateHTS(Physique physique)
 	{
-		upperGlycogen.barValue = input.controller.physique.GetUpperGlycogenFraction();
-		liverGlycogen.barValue = input.controller.physique.GetLiverGlycogenFraction();
-		lowerGlycogen.barValue = input.controller.physique.GetLowerGlycogenFraction();
-		protein.barValue = input.controller.physique.GetProteinFraction();
-		hydration.barValue = input.controller.physique.GetHydrationFraction();
+		upperGlycogen.barValue = physique.GetUpperGlycogenFraction();
+		liverGlycogen.barValue = physique.GetLiverGlycogenFraction();
+		lowerGlycogen.barValue = physique.GetLowerGlycogenFraction();
+		protein.barValue = physique.GetProteinFraction();
+		hydration.barValue = physique.GetHydrationFraction();
 
-		SetImageOpacity(hydrationImage, input.controller.physique.GetHydrationFraction(), true);
-		float mostHungry = Mathf.Min(new float[]{ input.controller.physique.GetUpperGlycogenFraction(),
-													input.controller.physique.GetLiverGlycogenFraction(),
-													input.controller.physique.GetLowerGlycogenFraction(),
-													input.controller.physique.GetProteinFraction()});
+		SetImageOpacity(hydrationImage, physique.GetHydrationFraction(), true);
+		float mostHungry = Mathf.Min(new float[]{ physique.GetUpperGlycogenFraction(),
+													physique.GetLiverGlycogenFraction(),
+													physique.GetLowerGlycogenFraction(),
+													physique.GetProteinFraction()});
 		SetImageOpacity(hungerImage, mostHungry, true);
+	}
+
+	void UpdateActivityOverride(Physique physique)
+	{
+		ActivityOverride ao = physique.GetActivityOverride();
+		if (ao == null)
+		{
+			activityOverrideLabel.SetActive(false);
+		}
+		else
+		{
+			activityOverrideLabel.SetActive(true);
+			activityOverrideText.text = ao.GetActionData().name;
+			activityOverrideTime.text = (physique.GetActivityOverrideTimer() / 60f).ToString("N0") + " min";
+		}
 	}
 }

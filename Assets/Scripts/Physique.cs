@@ -108,8 +108,14 @@ public class Physique : MonoBehaviour {
 	}
 	int ambulationIndex = -1;
 
+	public delegate void OnPhysiqueUpdated(Physique physique);
+	public event OnPhysiqueUpdated onPhysiqueUpdated;
+
 	public delegate void OnAmbulationChanged(AmbulationData newAmbulation);
 	public event OnAmbulationChanged onAmbulationChanged;
+
+	public delegate void OnActivityOverrideEnded(ActivityOverride activityOverride);
+	public event OnActivityOverrideEnded onActivityOverrideEnded;
 
 	public bool metabolismActive = false;
 
@@ -123,7 +129,7 @@ public class Physique : MonoBehaviour {
 	const float POWER_PER_KG_FAST_TWITCH = 21f;
 	const float POWER_PER_KG_SLOW_TWITCH = 14.6f;
 
-	public float interval = 0.2f;
+	public float interval = 0.05f;
 
 	// https://answers.yahoo.com/question/index?qid=20101118192723AAbO8el
 	// 18% to 26% efficiency - make fast twitch less efficient for balance reasons
@@ -207,7 +213,10 @@ public class Physique : MonoBehaviour {
 
 	List<ActionData> actions;
 	SortedList<Ambulation, ActionData> ambulationActions;
+	ActivityOverride activityOverride = null;
 	ArmorManager armorManager;
+	float activityOverrideTimer;
+	float activityOverrideTimescale;
 
 	// https://en.wikipedia.org/wiki/Lactic_acid
 	// blood concentrations up to 25 mmol/liter
@@ -375,6 +384,11 @@ public class Physique : MonoBehaviour {
 		InitializeStrengthDependent();
 	}
 
+	private void Start()
+	{
+		StartCoroutine(UpdateMetabolism());
+	}
+
 	public void OnMobilityChanged(bool isCompromised)
 	{
 		mobilityCompromised = isCompromised;
@@ -421,31 +435,56 @@ public class Physique : MonoBehaviour {
 	float intervalTimer;
 
 	// process the metabolism at regular intervals
-	private void Update()
+	IEnumerator UpdateMetabolism()
 	{
-		if (metabolismActive)
+		while (true)
 		{
-			if (intervalTimer <= 0f)
+			if (metabolismActive)
 			{
-				intervalTimer = interval;
-
 				caloriesConsumed = 0f;      // set by Process functions
 
-				Digest(interval);
-
-				DistributeGlycogen(interval);
-
 				// apply actions
-				ProcessBMR(interval);
-				ProcessMovement(interval);
-				ProcessActions(interval);
+				if (activityOverride == null)
+				{
+					Digest(interval);
+
+					DistributeGlycogen(interval);
+
+					ProcessBMR(interval);
+
+					ProcessMovement(interval);
+					ProcessActions(interval);
+				}
+				else
+				{
+					activityOverrideTimer -= interval * activityOverrideTimescale;
+
+					Digest(interval * activityOverrideTimescale);
+
+					DistributeGlycogen(interval * activityOverrideTimescale);
+
+					ProcessBMR(interval * activityOverrideTimescale);
+
+					ProcessActivityOverride(interval * activityOverrideTimescale);
+
+					if (activityOverrideTimer <= 0f || !CanProcessCurrentOverride())
+					{
+						if (onActivityOverrideEnded != null)
+						{
+							onActivityOverrideEnded(activityOverride);
+						}
+						activityOverride = null;
+					}
+				}
 
 				calorieRate = caloriesConsumed / interval;
+
+				if (onPhysiqueUpdated != null)
+				{
+					onPhysiqueUpdated(this);
+				}
 			}
-			else
-			{
-				intervalTimer -= Time.deltaTime;
-			}
+			yield return new WaitForSeconds(interval);
 		}
 	}
 
@@ -527,6 +566,7 @@ public class Physique : MonoBehaviour {
 		{
 			glycogenLiver = liverGlycogenMax;
 			massFat += glycogenSurplus * KCAL_PER_KG_CARB / KCAL_PER_KG_FAT;
+			Debug.Log("Glycogen surplus: " + glycogenSurplus);
 		}
 		else
 		{
@@ -587,6 +627,14 @@ public class Physique : MonoBehaviour {
 		}
 	}
 
+	void ProcessActivityOverride(float deltaTime)
+	{
+		if (Random.Range(0f, 1f) < activityOverride.GetDutyCycle())
+		{
+			ProcessAction(activityOverride.GetActionData(), deltaTime);
+		}
+	}
+
 	// calculate and apply the calorie consumption from an action
 	void ProcessAction(ActionData action, float deltaTime)
 	{
@@ -597,9 +645,9 @@ public class Physique : MonoBehaviour {
 		float powerAnaerobicLower = Mathf.Clamp(action.powerLower / MUSCLE_EFFICIENCY - powerAerobicLower, 0f, lowerAnaerobicThreshold);
 
 		// calculate fat and glycogen cost/production
-		float fatCost = (powerAerobicUpper + powerAerobicLower) / JOULES_PER_KG_FAT;
-		float upperGlycogenCost = powerAnaerobicUpper / JOULES_PER_KG_MUSCLE_GLYCOGEN;
-		float lowerGlycogenCost = powerAnaerobicLower / JOULES_PER_KG_MUSCLE_GLYCOGEN;
+		float fatCost = deltaTime * (powerAerobicUpper + powerAerobicLower) / JOULES_PER_KG_FAT;
+		float upperGlycogenCost = deltaTime * powerAnaerobicUpper / JOULES_PER_KG_MUSCLE_GLYCOGEN;
+		float lowerGlycogenCost = deltaTime * powerAnaerobicLower / JOULES_PER_KG_MUSCLE_GLYCOGEN;
 		float liverGlycogenProduced = (upperGlycogenCost + lowerGlycogenCost) * GLUCOSE_PER_LACTATE;
 
 		// adjust fat and glycogen levels
@@ -611,6 +659,40 @@ public class Physique : MonoBehaviour {
 
 		// calculate consumed calories
 		caloriesConsumed += fatCost * KCAL_PER_KG_FAT + (upperGlycogenCost + lowerGlycogenCost - liverGlycogenProduced) * KCAL_PER_KG_CARB;
+	}
+
+	bool CanProcessCurrentOverride()
+	{
+		if (activityOverride != null)
+		{
+			bool isUpperAnaerobic = activityOverride.GetActionData().powerUpper / MUSCLE_EFFICIENCY > upperAerobicThreshold;
+			bool isLowerAnaerobic = activityOverride.GetActionData().powerLower / MUSCLE_EFFICIENCY > lowerAerobicThreshold;
+
+			bool hasGlycogen = (GetUpperGlycogenFraction() > 0f || !isUpperAnaerobic) &&
+								(GetLowerGlycogenFraction() > 0f || !isLowerAnaerobic);
+			if (!hasGlycogen)
+			{
+				Debug.Log("Inadequate glycogen!");
+			}
+
+			bool lacticAcidMaxed = (GetUpperLactateFraction() >= 1f && isUpperAnaerobic) ||
+									(GetLowerLactateFraction() >= 1f && isLowerAnaerobic);
+			if (lacticAcidMaxed)
+			{
+				Debug.Log("Lactic acid maxed!");
+			}
+
+
+			bool hasPower = (upperAerobicThreshold + upperAnaerobicThreshold) >= activityOverride.GetActionData().powerUpper &&
+							(lowerAerobicThreshold + lowerAnaerobicThreshold) >= activityOverride.GetActionData().powerLower;
+			if (!hasPower)
+			{
+				Debug.Log("Inadequate power!");
+			}
+
+			return hasGlycogen && !lacticAcidMaxed && hasPower;
+		}
+		return false;
 	}
 
 	// called by MovementController to set the current ambulation.
@@ -715,6 +797,21 @@ public class Physique : MonoBehaviour {
 			return false;
 		}
 	}
+
+	public void SetActivityOverride(ActivityOverride activityOverride, float duration, float timeScale)
+	{
+		if (this.activityOverride != null && onActivityOverrideEnded != null)
+		{
+			onActivityOverrideEnded(this.activityOverride);
+		}
+		this.activityOverride = activityOverride;
+		this.activityOverrideTimer = duration;
+		this.activityOverrideTimescale = timeScale;
+	}
+
+	public ActivityOverride GetActivityOverride() { return activityOverride; }
+
+	public float GetActivityOverrideTimer() { return activityOverrideTimer; }
 
 	// scales calculated food satiety to the player's satiety scale
 	public float AdjustSatiety(float satiety)

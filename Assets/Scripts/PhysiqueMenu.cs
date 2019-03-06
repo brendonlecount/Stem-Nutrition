@@ -5,8 +5,6 @@ using UnityEngine.UI;
 
 // menu used for displaying physique-related stats, and eating foods
 public class PhysiqueMenu : MonoBehaviour {
-	public float updateInterval = 0.2f;
-
 	public Bar upperLacticAcidBar;
 	public Bar bloodLacticAcidBar;
 	public Bar lowerLacticAcidBar;
@@ -61,6 +59,12 @@ public class PhysiqueMenu : MonoBehaviour {
 	private void OnEnable()
 	{
 		RefreshIngestibles();
+		physique.onPhysiqueUpdated += OnPhysiqueUpdated;
+	}
+
+	private void OnDisable()
+	{
+		physique.onPhysiqueUpdated -= OnPhysiqueUpdated;
 	}
 
 	// updates the list of ingestibles
@@ -92,59 +96,51 @@ public class PhysiqueMenu : MonoBehaviour {
 	}
 
 	// update the bar values ever updateInterval seconds
-	void Update () {
-		if (intervalTimer <= 0f)
-		{
-			intervalTimer = updateInterval;
+	void OnPhysiqueUpdated (Physique physique)
+	{
+		upperLacticAcidBar.text = (1000f * physique.upperLactate).ToString("N1") + " g";
+		upperLacticAcidBar.barValue = physique.GetUpperLactateFraction();
 
-			upperLacticAcidBar.text = (1000f * physique.upperLactate).ToString("N1") + " g";
-			upperLacticAcidBar.barValue = physique.GetUpperLactateFraction();
+		bloodLacticAcidBar.text = (1000f * physique.bloodLactate).ToString("N1") + " g";
+		bloodLacticAcidBar.barValue = physique.GetBloodLactateFraction();
 
-			bloodLacticAcidBar.text = (1000f * physique.bloodLactate).ToString("N1") + " g";
-			bloodLacticAcidBar.barValue = physique.GetBloodLactateFraction();
+		lowerLacticAcidBar.text = (1000f * physique.lowerLactate).ToString("N1") + " g";
+		lowerLacticAcidBar.barValue = physique.GetLowerLactateFraction();
 
-			lowerLacticAcidBar.text = (1000f * physique.lowerLactate).ToString("N1") + " g";
-			lowerLacticAcidBar.barValue = physique.GetLowerLactateFraction();
+		upperGlycogenBar.text = (1000f * physique.glycogenUpper).ToString("N1") + " g";
+		upperGlycogenBar.barValue = physique.GetUpperGlycogenFraction();
 
-			upperGlycogenBar.text = (1000f * physique.glycogenUpper).ToString("N1") + " g";
-			upperGlycogenBar.barValue = physique.GetUpperGlycogenFraction();
+		liverGlycogenBar.text = (1000f * physique.glycogenLiver).ToString("N1") + " g";
+		liverGlycogenBar.barValue = physique.GetLiverGlycogenFraction();
 
-			liverGlycogenBar.text = (1000f * physique.glycogenLiver).ToString("N1") + " g";
-			liverGlycogenBar.barValue = physique.GetLiverGlycogenFraction();
+		lowerGlycogenBar.text = (1000f * physique.glycogenLower).ToString("N1") + " g";
+		lowerGlycogenBar.barValue = physique.GetLowerGlycogenFraction();
 
-			lowerGlycogenBar.text = (1000f * physique.glycogenLower).ToString("N1") + " g";
-			lowerGlycogenBar.barValue = physique.GetLowerGlycogenFraction();
+		proteinBar.text = (1000f * physique.proteinDigesting).ToString("N1") + " g";
+		proteinBar.barValue = physique.GetProteinFraction();
 
-			proteinBar.text = (1000f * physique.proteinDigesting).ToString("N1") + " g";
-			proteinBar.barValue = physique.GetProteinFraction();
+		hydrationBar.text = physique.hydration.ToString("N1") + " kg";
+		hydrationBar.barValue = physique.GetHydrationFraction();
 
-			hydrationBar.text = physique.hydration.ToString("N1") + " kg";
-			hydrationBar.barValue = physique.GetHydrationFraction();
+		satietyBar.text = (physique.satiety * 100f).ToString("N0") + "%";
+		satietyBar.barValue = physique.satiety;
 
-			satietyBar.text = (physique.satiety * 100f).ToString("N0") + "%";
-			satietyBar.barValue = physique.satiety;
+		upperFTBar.text = physique.fastTwitchUpper.ToString("N1") + " kg";
+		upperFTBar.text2 = physique.upperAnaerobicThreshold.ToString("N0") + " W";
 
-			upperFTBar.text = physique.fastTwitchUpper.ToString("N1") + " kg";
-			upperFTBar.text2 = physique.upperAnaerobicThreshold.ToString("N0") + " W";
+		upperSTBar.text = physique.slowTwitchUpper.ToString("N1") + " kg";
+		upperSTBar.text2 = physique.upperAerobicThreshold.ToString("N0") + " W";
 
-			upperSTBar.text = physique.slowTwitchUpper.ToString("N1") + " kg";
-			upperSTBar.text2 = physique.upperAerobicThreshold.ToString("N0") + " W";
+		lowerFTBar.text = physique.fastTwitchLower.ToString("N1") + " kg";
+		lowerFTBar.text2 = physique.lowerAnaerobicThreshold.ToString("N0") + " W";
 
-			lowerFTBar.text = physique.fastTwitchLower.ToString("N1") + " kg";
-			lowerFTBar.text2 = physique.lowerAnaerobicThreshold.ToString("N0") + " W";
+		lowerSTBar.text = physique.slowTwitchLower.ToString("N1") + " kg";
+		lowerSTBar.text2 = physique.lowerAerobicThreshold.ToString("N0") + " W";
 
-			lowerSTBar.text = physique.slowTwitchLower.ToString("N1") + " kg";
-			lowerSTBar.text2 = physique.lowerAerobicThreshold.ToString("N0") + " W";
+		bodyFatBar.text = physique.massFat.ToString("N1") + " kg";
+		bodyFatBar.text2 = ((physique.massFat / physique.massTotal) * 100f).ToString("N1") + "%";
 
-			bodyFatBar.text = physique.massFat.ToString("N1") + " kg";
-			bodyFatBar.text2 = ((physique.massFat / physique.massTotal) * 100f).ToString("N1") + "%";
-
-			totalMassBar.text = physique.massTotal.ToString("N1") + " kg";
-		}
-		else
-		{
-			intervalTimer -= Time.deltaTime;
-		}
+		totalMassBar.text = physique.massTotal.ToString("N1") + " kg";
 	}
 
 	// updates displayed ingestible nutrition information

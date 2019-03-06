@@ -34,6 +34,8 @@ public class PlayerInput : InputSource
 	bool hotkey08Pressed;
 	bool hotkey09Pressed;
 
+	bool freezeControls = false;
+
 	// Use this for initialization
 	void Awake()
 	{
@@ -135,7 +137,7 @@ public class PlayerInput : InputSource
 		}
 
 		// activates currently selected activator, if any
-		if (Input.GetAxisRaw("Activate") > 0f)
+		if (Input.GetAxisRaw("Activate") > 0f && !freezeControls)
 		{
 			if (!activatePressed)
 			{
@@ -175,151 +177,175 @@ public class PlayerInput : InputSource
 			cameraController.perspective = CameraPerspective.Third;
 		}
 
-		// WASD movement
-		Vector2 movement = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-		bool isMoving = false;
-		if (movement.sqrMagnitude > Mathf.Epsilon)
+		if (freezeControls)
 		{
-			controller.SetMovement(movement);
-			isMoving = true;
-		}
+			// freeze WASD movement and ambulation changes
+			controller.SetMovement(Vector2.zero);
 
-		// determine and apply current ambulation
-		Ambulation updatedAmbulation = controller.ambulation;
-		Pose updatedPose = controller.pose;
-		// read jump key
-		if (Input.GetAxisRaw("Jump") > 0f)
+			// freeze hotkeys
+			hotkey01Pressed = ReadHotkey(false, hotkey01Pressed, HolsterName.UnarmedRight);
+			hotkey02Pressed = ReadHotkey(false, hotkey02Pressed, HolsterName.UnarmedLeft);
+			hotkey03Pressed = ReadHotkey(false, hotkey03Pressed, HolsterName.ThighRight);
+			hotkey04Pressed = ReadHotkey(false, hotkey04Pressed, HolsterName.ThighLeft);
+			hotkey05Pressed = ReadHotkey(false, hotkey05Pressed, HolsterName.BackRight);
+			hotkey06Pressed = ReadHotkey(false, hotkey06Pressed, HolsterName.BackLeft);
+			hotkey07Pressed = ReadHotkey(false, hotkey07Pressed, HolsterName.ShoulderRight);
+			hotkey08Pressed = ReadHotkey(false, hotkey08Pressed, HolsterName.ShoulderLeft);
+			hotkey09Pressed = ReadHotkey(false, hotkey09Pressed, HolsterName.Chest);
+			hotkey00Pressed = ReadHotkey(false, hotkey00Pressed, HolsterName.Head);
+
+			// freeze primary attack
+			controller.weapons.SetPrimaryAttack(false);
+			// freeze secondary attack
+			controller.weapons.SetSecondaryAttack(false);
+		}
+		else
 		{
-			if (!jumpPressed)
+			// WASD movement
+			Vector2 movement = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+			bool isMoving = false;
+			if (movement.sqrMagnitude > Mathf.Epsilon)
 			{
-				jumpPressed = true;
-				switch (updatedPose)
+				controller.SetMovement(movement);
+				isMoving = true;
+			}
+
+			// determine and apply current ambulation
+			Ambulation updatedAmbulation = controller.ambulation;
+			Pose updatedPose = controller.pose;
+			// read jump key
+			if (Input.GetAxisRaw("Jump") > 0f)
+			{
+				if (!jumpPressed)
 				{
-					case Pose.Standing:
-						controller.TriggerJump();
-						break;
-					case Pose.Crouching:
-						updatedPose = Pose.Standing;
-						break;
-					case Pose.Prone:
-						updatedPose = Pose.Crouching;
-						break;
-				}
-			}
-		}
-		else
-		{
-			jumpPressed = false;
-		}
-
-		// read crouch key
-		if (Input.GetAxisRaw("Crouch") > 0f)
-		{
-			if (!crouchPressed)
-			{
-				crouchPressed = true;
-				switch (updatedPose)
-				{
-					case Pose.Standing:
-						updatedPose = Pose.Crouching;
-						break;
-					case Pose.Crouching:
-						updatedPose = Pose.Prone;
-						break;
-				}
-			}
-		}
-		else
-		{
-			crouchPressed = false;
-		}
-
-		// read walk toggle
-		if (Input.GetAxisRaw("Walk") > 0f)
-		{
-			if (!walkPressed)
-			{
-				walkPressed = true;
-				walkToggled = !walkToggled;
-			}
-		}
-		else
-		{
-			walkPressed = false;
-		}
-
-		// read sprint key
-		if (Input.GetAxisRaw("Sprint") > 0f)
-		{
-			// select sprinting and stand up if sprint pressed
-			updatedAmbulation = Ambulation.Sprint;
-			updatedPose = Pose.Standing;
-		}
-		else
-		{
-			// otherwise, determine ambulation from pose and directional input
-			switch (updatedPose)
-			{
-				case Pose.Standing:
-					if (isMoving)
+					jumpPressed = true;
+					switch (updatedPose)
 					{
-						if (walkToggled)
+						case Pose.Standing:
+							controller.TriggerJump();
+							break;
+						case Pose.Crouching:
+							updatedPose = Pose.Standing;
+							break;
+						case Pose.Prone:
+							updatedPose = Pose.Crouching;
+							break;
+					}
+				}
+			}
+			else
+			{
+				jumpPressed = false;
+			}
+
+			// read crouch key
+			if (Input.GetAxisRaw("Crouch") > 0f)
+			{
+				if (!crouchPressed)
+				{
+					crouchPressed = true;
+					switch (updatedPose)
+					{
+						case Pose.Standing:
+							updatedPose = Pose.Crouching;
+							break;
+						case Pose.Crouching:
+							updatedPose = Pose.Prone;
+							break;
+					}
+				}
+			}
+			else
+			{
+				crouchPressed = false;
+			}
+
+			// read walk toggle
+			if (Input.GetAxisRaw("Walk") > 0f)
+			{
+				if (!walkPressed)
+				{
+					walkPressed = true;
+					walkToggled = !walkToggled;
+				}
+			}
+			else
+			{
+				walkPressed = false;
+			}
+
+			// read sprint key
+			if (Input.GetAxisRaw("Sprint") > 0f)
+			{
+				// select sprinting and stand up if sprint pressed
+				updatedAmbulation = Ambulation.Sprint;
+				updatedPose = Pose.Standing;
+			}
+			else
+			{
+				// otherwise, determine ambulation from pose and directional input
+				switch (updatedPose)
+				{
+					case Pose.Standing:
+						if (isMoving)
 						{
-							updatedAmbulation = Ambulation.Walk;
+							if (walkToggled)
+							{
+								updatedAmbulation = Ambulation.Walk;
+							}
+							else
+							{
+								updatedAmbulation = Ambulation.Run;
+							}
 						}
 						else
 						{
-							updatedAmbulation = Ambulation.Run;
+							updatedAmbulation = Ambulation.Stand;
 						}
-					}
-					else
-					{
-						updatedAmbulation = Ambulation.Stand;
-					}
-					break;
-				case Pose.Crouching:
-					if (isMoving)
-					{
-						updatedAmbulation = Ambulation.Sneak;
-					}
-					else
-					{
-						updatedAmbulation = Ambulation.Crouch;
-					}
-					break;
-				case Pose.Prone:
-					if (isMoving)
-					{
-						updatedAmbulation = Ambulation.Crawl;
-					}
-					else
-					{
-						updatedAmbulation = Ambulation.Lay;
-					}
-					break;
-			}	
+						break;
+					case Pose.Crouching:
+						if (isMoving)
+						{
+							updatedAmbulation = Ambulation.Sneak;
+						}
+						else
+						{
+							updatedAmbulation = Ambulation.Crouch;
+						}
+						break;
+					case Pose.Prone:
+						if (isMoving)
+						{
+							updatedAmbulation = Ambulation.Crawl;
+						}
+						else
+						{
+							updatedAmbulation = Ambulation.Lay;
+						}
+						break;
+				}
+			}
+			// apply determined ambulation (pose set by MovementController based on ambulation)
+			controller.ambulation = updatedAmbulation;
+
+			// read hotkeys
+			hotkey01Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey01") > 0f, hotkey01Pressed, HolsterName.UnarmedRight);
+			hotkey02Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey02") > 0f, hotkey02Pressed, HolsterName.UnarmedLeft);
+			hotkey03Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey03") > 0f, hotkey03Pressed, HolsterName.ThighRight);
+			hotkey04Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey04") > 0f, hotkey04Pressed, HolsterName.ThighLeft);
+			hotkey05Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey05") > 0f, hotkey05Pressed, HolsterName.BackRight);
+			hotkey06Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey06") > 0f, hotkey06Pressed, HolsterName.BackLeft);
+			hotkey07Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey07") > 0f, hotkey07Pressed, HolsterName.ShoulderRight);
+			hotkey08Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey08") > 0f, hotkey08Pressed, HolsterName.ShoulderLeft);
+			hotkey09Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey09") > 0f, hotkey09Pressed, HolsterName.Chest);
+			hotkey00Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey00") > 0f, hotkey00Pressed, HolsterName.Head);
+
+
+			// primary attack
+			controller.weapons.SetPrimaryAttack(Input.GetAxisRaw("Fire1") > 0f);
+			// secondary attack
+			controller.weapons.SetSecondaryAttack(Input.GetAxisRaw("Fire2") > 0f);
 		}
-		// apply determined ambulation (pose set by MovementController based on ambulation)
-		controller.ambulation = updatedAmbulation;
-
-		// read hotkeys
-		hotkey01Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey01") > 0f, hotkey01Pressed, HolsterName.UnarmedRight);
-		hotkey02Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey02") > 0f, hotkey02Pressed, HolsterName.UnarmedLeft);
-		hotkey03Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey03") > 0f, hotkey03Pressed, HolsterName.ThighRight);
-		hotkey04Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey04") > 0f, hotkey04Pressed, HolsterName.ThighLeft);
-		hotkey05Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey05") > 0f, hotkey05Pressed, HolsterName.BackRight);
-		hotkey06Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey06") > 0f, hotkey06Pressed, HolsterName.BackLeft);
-		hotkey07Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey07") > 0f, hotkey07Pressed, HolsterName.ShoulderRight);
-		hotkey08Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey08") > 0f, hotkey08Pressed, HolsterName.ShoulderLeft);
-		hotkey09Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey09") > 0f, hotkey09Pressed, HolsterName.Chest);
-		hotkey00Pressed = ReadHotkey(Input.GetAxisRaw("Hotkey00") > 0f, hotkey00Pressed, HolsterName.Head);
-
-
-		// primary attack
-		controller.weapons.SetPrimaryAttack(Input.GetAxisRaw("Fire1") > 0f);
-		// secondary attack
-		controller.weapons.SetSecondaryAttack(Input.GetAxisRaw("Fire2") > 0f);
-
 		// mouselook
 		float adjustedSensitivity = mouseSensitivity / controller.weapons.magnification;
 		// up/down
@@ -473,5 +499,10 @@ public class PlayerInput : InputSource
 				SendVisionModeChangedEvent(cameraController.visionMode);
 			}
 		}
+	}
+
+	public void FreezeControls(bool freeze)
+	{
+		freezeControls = freeze;
 	}
 }

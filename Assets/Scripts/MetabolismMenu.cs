@@ -41,22 +41,26 @@ public class MetabolismMenu : MonoBehaviour
 	[SerializeField] Bar lowerSlowTwitch = null;
 
 	GroupVisibility groupVisibility = GroupVisibility.Stamina;
-	Physique physique;
+	PlayerInput player;
     
 	private void Awake()
 	{
 		GameObject go = GameObject.FindGameObjectWithTag("PlayerController");
 		if (go != null)
 		{
-			PlayerInput player = go.GetComponent<PlayerInput>();
-			physique = player.controller.physique;
+			player = go.GetComponent<PlayerInput>();
 		}
 	}
 
 	private void OnEnable()
 	{
 		SetGroupVisibility(GroupVisibility.Stamina);
-		StartCoroutine(MenuUpdateRoutine());
+		player.controller.physique.onPhysiqueUpdated += OnPhysiqueUpdated;
+	}
+
+	private void OnDisable()
+	{
+		player.controller.physique.onPhysiqueUpdated -= OnPhysiqueUpdated;
 	}
 
 	public void StaminaGroupClicked() { SetGroupVisibility(GroupVisibility.Stamina); }
@@ -79,30 +83,26 @@ public class MetabolismMenu : MonoBehaviour
 		massButton.interactable = groupVisibility != GroupVisibility.Mass;
 	}
 
-	IEnumerator MenuUpdateRoutine()
+	public void OnPhysiqueUpdated(Physique physique)
 	{
-		while (true)
+		switch (groupVisibility)
 		{
-			switch (groupVisibility)
-			{
-				case GroupVisibility.Stamina:
-					UpdateStaminaGroup();
-					break;
-				case GroupVisibility.Protein:
-					UpdateProteinGroup();
-					break;
-				case GroupVisibility.Hydration:
-					UpdateHydrationGroup();
-					break;
-				case GroupVisibility.Mass:
-					UpdateMassGroup();
-					break;
-			}
-			yield return new WaitForSeconds(updateInterval);
+			case GroupVisibility.Stamina:
+				UpdateStaminaGroup(physique);
+				break;
+			case GroupVisibility.Protein:
+				UpdateProteinGroup(physique);
+				break;
+			case GroupVisibility.Hydration:
+				UpdateHydrationGroup(physique);
+				break;
+			case GroupVisibility.Mass:
+				UpdateMassGroup(physique);
+				break;
 		}
 	}
 
-	private void UpdateStaminaGroup()
+	private void UpdateStaminaGroup(Physique physique)
 	{
 		upperLacticAcid.text = (1000f * physique.upperLactate).ToString("N1") + " g";
 		upperLacticAcid.barValue = physique.GetUpperLactateFraction();
@@ -123,19 +123,19 @@ public class MetabolismMenu : MonoBehaviour
 		lowerGlycogen.barValue = physique.GetLowerGlycogenFraction();
 	}
 
-	private void UpdateProteinGroup()
+	private void UpdateProteinGroup(Physique physique)
 	{
 		protein.text = (1000f * physique.proteinDigesting).ToString("N1") + " g";
 		protein.barValue = physique.GetProteinFraction();
 	}
 
-	private void UpdateHydrationGroup()
+	private void UpdateHydrationGroup(Physique physique)
 	{
 		hydration.text = physique.hydration.ToString("N1") + " kg";
 		hydration.barValue = physique.GetHydrationFraction();
 	}
 
-	private void UpdateMassGroup()
+	private void UpdateMassGroup(Physique physique)
 	{
 		upperFastTwitch.text = physique.fastTwitchUpper.ToString("N1") + " kg";
 		upperFastTwitch.text2 = physique.upperAnaerobicThreshold.ToString("N0") + " W";

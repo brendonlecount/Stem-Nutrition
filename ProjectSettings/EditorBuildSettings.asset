@@ -14,3 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Course.unity
     guid: dcc964e1561aca34e9454109095a6368
+  - enabled: 1
+    path: Assets/Scenes/Living Area.unity
+    guid: 50686dd215155954ab5c014d6458d3ae
+  m_configObjects: {}
