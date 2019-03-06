@@ -1,0 +1,1 @@
+Put all your character FBX files into this folder, please.

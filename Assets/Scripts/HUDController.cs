@@ -181,10 +181,17 @@ public class HUDController : MonoBehaviour {
 		}
 	}
 
-	void SetImageOpacity(Image image, float fraction)
+	void SetImageOpacity(Image image, float fraction, bool fullAlphaAtZero)
 	{
 		Color newColor = image.color;
-		newColor.a = fraction;
+		if (fullAlphaAtZero)
+		{
+			newColor.a = 1f - fraction;
+		}
+		else
+		{
+			newColor.a = fraction;
+		}
 		image.color = newColor;
 	}
 
@@ -197,11 +204,11 @@ public class HUDController : MonoBehaviour {
 		protein.barValue = input.controller.physique.GetProteinFraction();
 		hydration.barValue = input.controller.physique.GetHydrationFraction();
 
-		SetImageOpacity(hydrationImage, input.controller.physique.GetHydrationFraction());
+		SetImageOpacity(hydrationImage, input.controller.physique.GetHydrationFraction(), true);
 		float mostHungry = Mathf.Min(new float[]{ input.controller.physique.GetUpperGlycogenFraction(),
 													input.controller.physique.GetLiverGlycogenFraction(),
 													input.controller.physique.GetLowerGlycogenFraction(),
 													input.controller.physique.GetProteinFraction()});
-		SetImageOpacity(hungerImage, mostHungry);
+		SetImageOpacity(hungerImage, mostHungry, true);
 	}
 }

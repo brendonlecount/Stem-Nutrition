@@ -698,6 +698,24 @@ public class Physique : MonoBehaviour {
 		}
 	}
 
+	public bool Consume(FoodNI foodNI)
+	{
+		float satiety = AdjustSatiety(foodNI.satiety);
+		if (satiety < 1f - this.satiety)
+		{
+			this.satiety += satiety;
+			proteinDigesting += foodNI.protein / 1000f;
+			carbDigesting += foodNI.carbs / 1000f;
+			fatDigesting += foodNI.fat / 1000f;
+			waterDigesting += foodNI.water / 1000f;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	// scales calculated food satiety to the player's satiety scale
 	public float AdjustSatiety(float satiety)
 	{
