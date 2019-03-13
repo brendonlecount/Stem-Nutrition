@@ -825,6 +825,11 @@ public class Physique : MonoBehaviour {
 		return calorieRate;
 	}
 
+	public float GetGlycogenFraction(float glycogenKG)
+	{
+		return glycogenKG / (upperGlycogenMax + lowerGlycogenMax + liverGlycogenMax);
+	}
+
 	public float GetUpperGlycogenFraction()
 	{
 		return glycogenUpper / upperGlycogenMax;
@@ -838,6 +843,11 @@ public class Physique : MonoBehaviour {
 	public float GetLiverGlycogenFraction()
 	{
 		return glycogenLiver / liverGlycogenMax;
+	}
+
+	public float GetHydrationFraction(float waterKG)
+	{
+		return (waterKG / hydrationMax - 0.8f) / 0.2f;
 	}
 
 	public float GetHydrationFraction()
@@ -858,6 +868,11 @@ public class Physique : MonoBehaviour {
 	public float GetLowerLactateFraction()
 	{
 		return lowerLactate / lowerLactateMax;
+	}
+
+	public float GetProteinFraction(float proteinKG)
+	{
+		return proteinKG / (proteinDigestionRate * 3600f * 3f);
 	}
 
 	public float GetProteinFraction()
