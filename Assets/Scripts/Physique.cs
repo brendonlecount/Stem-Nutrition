@@ -454,6 +454,8 @@ public class Physique : MonoBehaviour {
 
 					ProcessMovement(interval);
 					ProcessActions(interval);
+
+					calorieRate = caloriesConsumed / interval;
 				}
 				else
 				{
@@ -467,6 +469,8 @@ public class Physique : MonoBehaviour {
 
 					ProcessActivityOverride(interval * activityOverrideTimescale);
 
+					calorieRate = caloriesConsumed / (interval * activityOverrideTimescale);
+
 					if (activityOverrideTimer <= 0f || !CanProcessCurrentOverride())
 					{
 						if (onActivityOverrideEnded != null)
@@ -477,7 +481,8 @@ public class Physique : MonoBehaviour {
 					}
 				}
 
-				calorieRate = caloriesConsumed / interval;
+
+				hydration = Mathf.Max(hydration - caloriesConsumed / 1000f, 0f);
 
 				if (onPhysiqueUpdated != null)
 				{
@@ -507,7 +512,7 @@ public class Physique : MonoBehaviour {
 
 		delta = Mathf.Min(carbDigesting, carbDigestionRate * deltaTime);
 		carbDigesting -= delta;
-		float surplus = delta - (liverGlycogenMax - glycogenLiver) + (upperGlycogenMax - glycogenUpper) + (lowerGlycogenMax - glycogenLower);
+		float surplus = delta - ((liverGlycogenMax - glycogenLiver) + (upperGlycogenMax - glycogenUpper) + (lowerGlycogenMax - glycogenLower));
 		if (surplus > 0)
 		{
 			// there's a surplus, store excess as fat
@@ -847,7 +852,7 @@ public class Physique : MonoBehaviour {
 
 	public float GetHydrationFraction(float waterKG)
 	{
-		return (waterKG / hydrationMax - 0.8f) / 0.2f;
+		return waterKG / (hydrationMax * 0.2f);
 	}
 
 	public float GetHydrationFraction()

@@ -85,6 +85,7 @@ public class FridgeMenu : MonoBehaviour
 	{
 		MenuManager.menuMode = MenuModes.none;
 		menuPanel.SetActive(false);
+		physique.onPhysiqueUpdated -= PhysiqueUpdated;
 	}
 
 	public void PhysiqueUpdated(Physique physique)
@@ -105,5 +106,6 @@ public class FridgeMenu : MonoBehaviour
 		hydrationBar.SetBarValue(0, currentHydrationFraction);
 		hydrationBar.SetBarValue(1, physique.GetHydrationFraction(physique.waterDigesting));
 		hydrationBar.SetBarValue(2, physique.GetHydrationFraction());
+		hydrationBar.UpdateBarFills();
 	}
 }

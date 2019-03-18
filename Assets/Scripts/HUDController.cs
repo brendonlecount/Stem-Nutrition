@@ -84,6 +84,11 @@ public class HUDController : MonoBehaviour {
 		}
 	}
 
+	private void OnDestroy()
+	{
+		input.controller.physique.onPhysiqueUpdated -= PhysiqueUpdated;
+	}
+
 	private void PhysiqueUpdated(Physique physique)
 	{
 		UpdateStamina(physique);
